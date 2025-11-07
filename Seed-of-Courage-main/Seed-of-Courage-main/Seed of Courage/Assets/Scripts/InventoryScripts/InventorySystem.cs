@@ -1,0 +1,77 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+using System.Linq;
+using System.Drawing;
+
+[System.Serializable]
+public class InventorySystem
+{
+    [SerializeField] private List<InventorySlot> inventorySlots;
+    public List<InventorySlot> InventorySlots => inventorySlots;
+    public int InventorySize => InventorySlots.Count;
+
+    public UnityAction<InventorySlot> OnInventorySlotChanged;
+
+    public InventorySystem(int size)
+    {
+        inventorySlots = new List<InventorySlot>(size);
+
+        for (int i = 0; i < size; i++)
+        {
+            inventorySlots.Add(new InventorySlot());
+        }
+    }
+
+    /**
+    public void Start()
+    {
+        inventorySlots = new List<InventorySlot>(10);
+
+        for (int i = 0; i < 10; i++)
+        {
+            inventorySlots.Add(new InventorySlot());
+        }
+    }
+    */
+
+    public bool AddToInventory(InventoryItemData itemToAdd, int amountToAdd)
+    {
+        /**
+        inventorySlots[0] = new InventorySlot(itemToAdd, amountToAdd);
+        return true;
+        */
+        if (ContainsItem(itemToAdd, out List<InventorySlot> invSlot))
+        {
+            foreach (var slot in invSlot)
+            {
+                if (slot.RoomLeftInStack(amountToAdd))
+                {
+                    slot.AddToStack(amountToAdd);
+                    OnInventorySlotChanged?.Invoke(slot);
+                    return true;
+                }
+            }
+        }
+        if (HasFreeSlot(out InventorySlot freeSlot))
+        {
+            freeSlot.UpdateInventorySlot(itemToAdd, amountToAdd);
+            OnInventorySlotChanged?.Invoke(freeSlot);
+            return true;
+        }
+        return false;
+    }
+
+    public bool ContainsItem(InventoryItemData itemToAdd, out List<InventorySlot> invSlot) {
+        invSlot = InventorySlots.Where(i => i.ItemData == itemToAdd).ToList();
+        // InventorySlots.First(slot => slot.ItemData.maxStackSize > 5);
+        return invSlot.Count > 1 ? true : false;
+    }
+
+    public bool HasFreeSlot(out InventorySlot freeSlot)
+    {
+        freeSlot = InventorySlots.FirstOrDefault(i => i.ItemData == null);
+        return freeSlot == null ? false : true;
+    }
+}
